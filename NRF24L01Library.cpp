@@ -46,12 +46,19 @@ void NRF24L01Lib::update() {
 	}
 }
 //---------------------------------------------------------------------------------
-bool NRF24L01Lib::sendPacket(uint8_t *data, uint8_t size) {
+bool NRF24L01Lib::sendPacket() {
 
-	uint8_t bs[size];
-	memcpy(bs, data, size);
-	RF24NetworkHeader header( _role == RF24_SERVER ? RF24_CLIENT : RF24_SERVER );
-	return _network->write(header, &bs, size);
+	RF24NetworkHeader header( _role );
+	if (_role == RF24_CLIENT) {
+		return _network->write(header, controllerPacket, sizeof(controllerPacket));
+	}
+	else if (_role == RF24_SERVER) {
+		return _network->write(header, boardPacket, sizeof(boardPacket));
+	}
+	else {
+		Serial.printf("_role not handled: %d\n", _role);
+		return false;
+	}
 }
 //---------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------
@@ -60,7 +67,7 @@ bool NRF24L01Lib::sendPacket(uint8_t *data, uint8_t size) {
 //---------------------------------------------------------------------------------
 uint16_t NRF24L01Lib::readPacket() {
 
-	RF24NetworkHeader header;                            // If so, take a look at it
+	RF24NetworkHeader header;                       
 	_network->peek(header);
 
 	if ( header.from_node == RF24_CLIENT ) {

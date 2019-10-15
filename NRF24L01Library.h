@@ -10,19 +10,20 @@
 
 //--------------------------------------------------------------------------------
 
-struct BoardStruct
+struct BoardPacket
 {
 	bool vescOnline;
 	float batteryVoltage;
-	bool areMoving;
+	float ampHours;
+	bool isMoving;
 	int odometer;
+	long id;
 };
 
-struct ControllerStruct
+struct ControllerPacket
 {
 	byte throttle;
 	long id;
-	bool buttonC;
 };
 
 typedef void (*PacketAvailableCallback)(uint16_t from);
@@ -46,8 +47,8 @@ class NRF24L01Lib
 		void update();
 		bool sendPacket(uint8_t *data, uint8_t size);
 
-		BoardStruct boardPacket;
-		ControllerStruct controllerPacket;
+		BoardPacket boardPacket;
+		ControllerPacket controllerPacket;
 
 	private:
 		RF24 *_radio;
