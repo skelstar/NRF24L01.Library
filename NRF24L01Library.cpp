@@ -50,10 +50,10 @@ bool NRF24L01Lib::sendPacket() {
 
 	RF24NetworkHeader header( _role );
 	if (_role == RF24_CLIENT) {
-		return _network->write(header, controllerPacket, sizeof(controllerPacket));
+		return _network->write(header, &controllerPacket, sizeof(controllerPacket));
 	}
 	else if (_role == RF24_SERVER) {
-		return _network->write(header, boardPacket, sizeof(boardPacket));
+		return _network->write(header, &boardPacket, sizeof(boardPacket));
 	}
 	else {
 		Serial.printf("_role not handled: %d\n", _role);
