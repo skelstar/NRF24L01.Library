@@ -46,9 +46,9 @@ void NRF24L01Lib::update() {
 	}
 }
 //---------------------------------------------------------------------------------
-bool NRF24L01Lib::sendPacket() {
+bool NRF24L01Lib::sendPacket(uint16_t to) {
 
-	RF24NetworkHeader header( _role );
+	RF24NetworkHeader header( to );
 	if (_role == RF24_CLIENT) {
 		return _network->write(header, &controllerPacket, sizeof(controllerPacket));
 	}
