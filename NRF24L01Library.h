@@ -44,11 +44,10 @@ class NRF24L01Lib
 				Role role,
 				PacketAvailableCallback packetAvailableCallback);
 		void update();
-		bool sendPacket();
+		bool sendPacket(uint8_t *data, uint8_t size);
 
 		BoardStruct boardPacket;
 		ControllerStruct controllerPacket;
-		HudStruct hudPacket;
 
 	private:
 		RF24 *_radio;

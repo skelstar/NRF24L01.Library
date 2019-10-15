@@ -50,7 +50,7 @@ bool NRF24L01Lib::sendPacket(uint8_t *data, uint8_t size) {
 
 	uint8_t bs[size];
 	memcpy(bs, data, size);
-	RF24NetworkHeader header( role == RF24_SERVER ? RF24_CLIENT : RF24_SERVER );
+	RF24NetworkHeader header( _role == RF24_SERVER ? RF24_CLIENT : RF24_SERVER );
 	return _network->write(header, &bs, size);
 }
 //---------------------------------------------------------------------------------
