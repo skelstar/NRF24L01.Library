@@ -4,27 +4,12 @@
 #include <Arduino.h>
 #include <RF24.h>
 #include <RF24Network.h>
+#include <VescData.h>
 
 #include <esp_int_wdt.h>
 #include <esp_task_wdt.h>
 
 //--------------------------------------------------------------------------------
-
-struct BoardPacket
-{
-	bool vescOnline;
-	float batteryVoltage;
-	float ampHours;
-	bool isMoving;
-	int odometer;
-	long id;
-};
-
-struct ControllerPacket
-{
-	byte throttle;
-	long id;
-};
 
 typedef void (*PacketAvailableCallback)(uint16_t from);
 
@@ -47,8 +32,8 @@ class NRF24L01Lib
 		void update();
 		bool sendPacket(uint16_t to);
 
-		BoardPacket boardPacket;
-		ControllerPacket controllerPacket;
+		VescData boardPacket;
+		ControllerData controllerPacket;
 
 	private:
 		RF24 *_radio;
