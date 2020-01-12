@@ -30,7 +30,7 @@ class NRF24L01Lib
 				Role role,
 				PacketAvailableCallback packetAvailableCallback);
 		void update();
-		bool sendPacket(uint16_t to);
+		bool sendPacket(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len);
 
 		VescData boardPacket;
 		ControllerData controllerPacket;
