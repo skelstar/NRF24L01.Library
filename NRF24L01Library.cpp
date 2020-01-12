@@ -11,9 +11,6 @@ void NRF24L01Lib::begin(
 		RF24Network *network,
 		PacketAvailableCallback packetAvailableCallback)
 {
-
-	byte pipes[][6] = {"1Node", "2Node"}; // Radio pipe addresses for the 2 nodes to communicate.
-
 	_radio = radio;
 	_network = network;
 	_packetAvailableCallback = packetAvailableCallback;

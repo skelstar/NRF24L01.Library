@@ -32,9 +32,6 @@ class NRF24L01Lib
 		void read_into(uint8_t *data, uint8_t data_len);
 		bool sendPacket(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len);
 
-		VescData boardPacket;
-		ControllerData controllerPacket;
-
 	private:
 		RF24 *_radio;
 		RF24Network *_network;
