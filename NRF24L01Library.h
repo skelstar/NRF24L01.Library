@@ -11,7 +11,7 @@
 
 //--------------------------------------------------------------------------------
 
-typedef void (*PacketAvailableCallback)(uint16_t from);
+typedef void (*PacketAvailableCallback)(uint16_t from, uint8_t type);
 
 class NRF24L01Lib
 {
@@ -27,9 +27,9 @@ class NRF24L01Lib
 		void begin(
 				RF24 *radio,
 				RF24Network *network,
-				Role role,
 				PacketAvailableCallback packetAvailableCallback);
 		void update();
+		void read_into(uint8_t *data, uint8_t data_len);
 		bool sendPacket(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len);
 
 		VescData boardPacket;
@@ -38,10 +38,8 @@ class NRF24L01Lib
 	private:
 		RF24 *_radio;
 		RF24Network *_network;
-		Role _role;
-		PacketAvailableCallback _packetAvailableCallback;
 
-		uint16_t readPacket();
+		PacketAvailableCallback _packetAvailableCallback;
 };
 
 #endif
