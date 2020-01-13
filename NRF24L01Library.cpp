@@ -9,6 +9,7 @@ NRF24L01Lib::NRF24L01Lib() {}
 void NRF24L01Lib::begin(
 		RF24 *radio,
 		RF24Network *network,
+		uint16_t address,
 		PacketAvailableCallback packetAvailableCallback)
 {
 	_radio = radio;
@@ -17,7 +18,10 @@ void NRF24L01Lib::begin(
 
 	_radio->begin();
 	_radio->setPALevel(RF24_PA_MAX);
-	_radio->setDataRate(RF24_1MBPS);
+	_radio->setDataRate(RF24_250KBPS);
+
+	_network->begin(address);
+	_network->multicastLevel(address);
 
 	_radio->printDetails(); // Dump the configuration of the rf unit for debugging
 }

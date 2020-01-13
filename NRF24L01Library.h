@@ -16,17 +16,13 @@ typedef void (*PacketAvailableCallback)(uint16_t from, uint8_t type);
 class NRF24L01Lib
 {
 	public:
-		enum Role
-		{
-			RF24_SERVER = 0,
-			RF24_CLIENT = 1
-		};
 
 		NRF24L01Lib();
 
 		void begin(
 				RF24 *radio,
 				RF24Network *network,
+				uint16_t address,
 				PacketAvailableCallback packetAvailableCallback);
 		void update();
 		void read_into(uint8_t *data, uint8_t data_len);
