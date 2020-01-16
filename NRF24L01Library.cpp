@@ -48,7 +48,7 @@ bool NRF24L01Lib::send_with_retries(uint16_t to, uint8_t type, uint8_t *data, ui
   uint8_t success, retries = 0;
   do
   {
-    success = sendPacket(to, type, data, data_len);
+    success = send_packet(to, type, data, data_len);
     if (success == false)
     {
       vTaskDelay(1);
@@ -58,7 +58,7 @@ bool NRF24L01Lib::send_with_retries(uint16_t to, uint8_t type, uint8_t *data, ui
   return retries;
 }
 //---------------------------------------------------------------------------------
-bool NRF24L01Lib::sendPacket(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len)
+bool NRF24L01Lib::send_packet(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len)
 {
 	RF24NetworkHeader header(to, type);
 	return _network->write(header, data, data_len);
