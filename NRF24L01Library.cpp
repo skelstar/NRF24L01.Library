@@ -43,9 +43,24 @@ void NRF24L01Lib::read_into(uint8_t *data, uint8_t data_len)
 	_network->read(header, data, data_len);
 }
 //---------------------------------------------------------------------------------
-bool NRF24L01Lib::sendPacket(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len) {
+bool NRF24L01Lib::send_with_retries(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len, uint8_t num_retries)
+{
+  uint8_t success, retries = 0;
+  do
+  {
+    success = sendPacket(to, type, data, data_len);
+    if (success == false)
+    {
+      vTaskDelay(1);
+    }
+  } while (!success && retries++ < num_retries);
 
-	RF24NetworkHeader header( to, type );
+  return retries;
+}
+//---------------------------------------------------------------------------------
+bool NRF24L01Lib::sendPacket(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len)
+{
+	RF24NetworkHeader header(to, type);
 	return _network->write(header, data, data_len);
 }
 //---------------------------------------------------------------------------------

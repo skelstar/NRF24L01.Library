@@ -26,7 +26,8 @@ class NRF24L01Lib
 				PacketAvailableCallback packetAvailableCallback);
 		void update();
 		void read_into(uint8_t *data, uint8_t data_len);
-		bool sendPacket(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len);
+		bool send_with_retries(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len, uint8_t num_retries);
+		bool send_packet(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len);
 
 	private:
 		RF24 *_radio;
