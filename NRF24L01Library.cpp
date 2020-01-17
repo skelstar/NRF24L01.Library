@@ -55,7 +55,7 @@ bool NRF24L01Lib::send_with_retries(uint16_t to, uint8_t type, uint8_t *data, ui
     }
   } while (!success && retries++ < num_retries);
 
-  return retries;
+  return retries == num_retries - 1;
 }
 //---------------------------------------------------------------------------------
 bool NRF24L01Lib::send_packet(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len)
