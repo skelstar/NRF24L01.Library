@@ -46,6 +46,7 @@ void NRF24L01Lib::read_into(uint8_t *data, uint8_t data_len)
 uint8_t NRF24L01Lib::send_with_retries(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len, uint8_t num_retries)
 {
   uint8_t success, retries = 0;
+	bool finished;
   do
   {
     success = send_packet(to, type, data, data_len);
@@ -53,7 +54,8 @@ uint8_t NRF24L01Lib::send_with_retries(uint16_t to, uint8_t type, uint8_t *data,
     {
       vTaskDelay(1);
     }
-  } while (!success && retries < num_retries);
+    finished = success || retries++ == num_retries;
+  } while (!finished);
 
   return retries;
 }
