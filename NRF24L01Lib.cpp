@@ -23,6 +23,9 @@ void NRF24L01Lib::begin(
 	_network->begin(address);
 	_network->multicastLevel(address);
 
+	_radio->flush_rx();
+	_radio->flush_tx();
+
 	_radio->printDetails(); // Dump the configuration of the rf unit for debugging
 }
 //---------------------------------------------------------------------------------
