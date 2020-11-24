@@ -14,25 +14,26 @@ typedef void (*PacketAvailableCallback)(uint16_t from, uint8_t type);
 
 class NRF24L01Lib
 {
-	public:
+public:
+	NRF24L01Lib();
 
-		NRF24L01Lib();
+	void begin(
+			RF24 *radio,
+			RF24Network *network,
+			uint16_t address,
+			PacketAvailableCallback packetAvailableCallback,
+			bool multicastEnable = false);
+	void update();
+	void read_into(uint8_t *data, uint8_t data_len);
+	bool send(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len);
+	bool broadcast(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len);
 
-		void begin(
-				RF24 *radio,
-				RF24Network *network,
-				uint16_t address,
-				PacketAvailableCallback packetAvailableCallback);
-		void update();
-		void read_into(uint8_t *data, uint8_t data_len);
-		uint8_t send_with_retries(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len, uint8_t num_retries);
-		bool send_packet(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len);
+private:
+	RF24 *_radio;
+	RF24Network *_network;
+	bool _multicastEnabled = false;
 
-	private:
-		RF24 *_radio;
-		RF24Network *_network;
-
-		PacketAvailableCallback _packetAvailableCallback;
+	PacketAvailableCallback _packetAvailableCallback;
 };
 
 #endif
