@@ -64,12 +64,12 @@ bool NRF24L01Lib::send(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_le
 	return _network->write(header, data, data_len);
 }
 //---------------------------------------------------------------------------------
-bool NRF24L01Lib::broadcast(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len)
+bool NRF24L01Lib::broadcast(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len, uint8_t multicastLevel)
 {
 	if (_multicastEnabled)
 	{
 		RF24NetworkHeader header(to, type);
-		return _network->multicast(header, data, data_len);
+		return _network->multicast(header, data, data_len, multicastLevel);
 	}
 	Serial.printf("WARNING: you can't call broadcast if multicast is not enabled!\n");
 	return false;

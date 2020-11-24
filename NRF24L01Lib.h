@@ -26,7 +26,7 @@ public:
 	void update();
 	void read_into(uint8_t *data, uint8_t data_len);
 	bool send(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len);
-	bool broadcast(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len);
+	bool broadcast(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len, uint8_t multicastLevel);
 
 private:
 	RF24 *_radio;
