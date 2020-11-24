@@ -1,5 +1,5 @@
 #include "Arduino.h"
-#include "NRF24L01Library.h"
+#include "NRF24L01Lib.h"
 
 //--------------------------------------------------------------------------------
 
@@ -23,6 +23,9 @@ void NRF24L01Lib::begin(
 	_network->begin(address);
 	_network->multicastLevel(address);
 
+	_radio->flush_rx();
+	_radio->flush_tx();
+
 	_radio->printDetails(); // Dump the configuration of the rf unit for debugging
 }
 //---------------------------------------------------------------------------------
@@ -43,9 +46,10 @@ void NRF24L01Lib::read_into(uint8_t *data, uint8_t data_len)
 	_network->read(header, data, data_len);
 }
 //---------------------------------------------------------------------------------
-bool NRF24L01Lib::send_with_retries(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len, uint8_t num_retries)
+uint8_t NRF24L01Lib::send_with_retries(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len, uint8_t num_retries)
 {
   uint8_t success, retries = 0;
+	bool finished;
   do
   {
     success = send_packet(to, type, data, data_len);
@@ -53,7 +57,8 @@ bool NRF24L01Lib::send_with_retries(uint16_t to, uint8_t type, uint8_t *data, ui
     {
       vTaskDelay(1);
     }
-  } while (!success && retries++ < num_retries);
+    finished = success || retries++ == num_retries;
+  } while (!finished);
 
   return retries == num_retries - 1;
 }
