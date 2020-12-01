@@ -10,19 +10,31 @@ void NRF24L01Lib::begin(
 		RF24 *radio,
 		RF24Network *network,
 		uint16_t address,
-		PacketAvailableCallback packetAvailableCallback)
+		PacketAvailableCallback packetAvailableCallback,
+		bool multicastEnable)
 {
 	_radio = radio;
 	_network = network;
 	_packetAvailableCallback = packetAvailableCallback;
+	_multicastEnabled = multicastEnable;
 
 	_radio->begin();
 	_radio->setPALevel(RF24_PA_MAX);
 	_radio->setDataRate(RF24_250KBPS);
 
 	_network->begin(address);
-	_network->multicastLevel(address);
 
+	if (_multicastEnabled)
+	{
+		if (address == 00)
+		{
+			_network->multicastLevel(0);
+		}
+		else if (address == 01 || address == 02)
+		{
+			_network->multicastLevel(1);
+		}
+	}
 	_radio->flush_rx();
 	_radio->flush_tx();
 
@@ -46,26 +58,20 @@ void NRF24L01Lib::read_into(uint8_t *data, uint8_t data_len)
 	_network->read(header, data, data_len);
 }
 //---------------------------------------------------------------------------------
-uint8_t NRF24L01Lib::send_with_retries(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len, uint8_t num_retries)
-{
-  uint8_t success, retries = 0;
-	bool finished;
-  do
-  {
-    success = send_packet(to, type, data, data_len);
-    if (success == false)
-    {
-      vTaskDelay(1);
-    }
-    finished = success || retries++ == num_retries;
-  } while (!finished);
-
-  return retries == num_retries - 1;
-}
-//---------------------------------------------------------------------------------
-bool NRF24L01Lib::send_packet(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len)
+bool NRF24L01Lib::send(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len)
 {
 	RF24NetworkHeader header(to, type);
 	return _network->write(header, data, data_len);
+}
+//---------------------------------------------------------------------------------
+bool NRF24L01Lib::broadcast(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len, uint8_t multicastLevel)
+{
+	if (_multicastEnabled)
+	{
+		RF24NetworkHeader header(to, type);
+		return _network->multicast(header, data, data_len, multicastLevel);
+	}
+	Serial.printf("WARNING: you can't call broadcast if multicast is not enabled!\n");
+	return false;
 }
 //---------------------------------------------------------------------------------
