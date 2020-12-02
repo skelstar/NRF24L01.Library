@@ -15,8 +15,7 @@ public:
 
   void begin(
       RF24Network *network,
-      PacketAvailableCallback packetAvailableCallback,
-      Packet::Type packetType)
+      PacketAvailableCallback packetAvailableCallback)
   {
     _network = network;
     _packetAvailableCallback = packetAvailableCallback;
@@ -70,6 +69,5 @@ private:
   RF24Network *_network;
   uint8_t _to;
   PacketAvailableCallback _packetAvailableCallback;
-  Packet::Type _packetType;
   bool _connected = true;
 };
