@@ -1,10 +1,11 @@
 
 
 typedef void (*PacketAvailableCallback)(uint16_t from, uint8_t type);
+typedef void (*ClientEventCallback)(void);
+typedef void (*ClientEventWithBoolCallback)(bool success);
 
 bool radioInitialised = false;
 
-// template <typename IN, typename OUT>
 class GenericClient
 {
 public:
@@ -19,7 +20,6 @@ public:
   {
     _network = network;
     _packetAvailableCallback = packetAvailableCallback;
-    _packetType = packetType;
   }
 
   template <typename IN>
@@ -43,7 +43,24 @@ public:
     // takes 3ms if OK, 30ms if not OK
     RF24NetworkHeader header(_to, type);
     _connected = _network->write(header, bs, len);
+
+    if (_connectedStateChanged() && _connectionStateChangeCallback != NULL)
+      _connectionStateChangeCallback();
+
+    if (_sentEventCallback != NULL)
+      _sentEventCallback(_connected);
+
     return _connected;
+  }
+
+  void setConnectedStateChangeCallback(ClientEventCallback cb)
+  {
+    _connectionStateChangeCallback = cb;
+  }
+
+  void setSentEventCallback(ClientEventWithBoolCallback cb)
+  {
+    _sentEventCallback = cb;
   }
 
   void update()
@@ -51,11 +68,15 @@ public:
     _network->update();
     if (_network->available())
     {
-      _connected = true;
       RF24NetworkHeader header;
       _network->peek(header);
       if (header.from_node == _to)
+      {
+        _connected = true;
         _packetAvailableCallback(header.from_node, header.type);
+        if (_connectedStateChanged() && _connectionStateChangeCallback != NULL)
+          _connectionStateChangeCallback();
+      }
     }
   }
 
@@ -65,9 +86,17 @@ public:
   }
 
 private:
-  // RF24 *_radio;
   RF24Network *_network;
   uint8_t _to;
   PacketAvailableCallback _packetAvailableCallback;
-  bool _connected = true;
+  ClientEventCallback _connectionStateChangeCallback;
+  ClientEventWithBoolCallback _sentEventCallback;
+  bool _connected = true, _oldConnected = false;
+
+  bool _connectedStateChanged()
+  {
+    bool changed = _oldConnected != _connected;
+    _oldConnected = _connected;
+    return changed;
+  }
 };
