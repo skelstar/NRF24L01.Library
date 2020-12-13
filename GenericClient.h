@@ -6,8 +6,12 @@ typedef void (*ClientEventWithBoolCallback)(bool success);
 
 bool radioInitialised = false;
 
+template <typename OUT, typename IN>
 class GenericClient
 {
+  typedef void (*ClientSentPacketCallback)(OUT out);
+  typedef void (*ClientReadPacketCallback)(IN in);
+
 public:
   GenericClient(uint8_t to)
   {
@@ -22,8 +26,7 @@ public:
     _packetAvailableCallback = packetAvailableCallback;
   }
 
-  template <typename IN>
-  IN read()
+  IN read(bool print = true)
   {
     RF24NetworkHeader header;
     IN ev;
@@ -31,11 +34,25 @@ public:
     uint8_t buff[len];
     _network->read(header, buff, len);
     memcpy(&ev, &buff, len);
+    if (_readPacketCallback != nullptr && print)
+      _readPacketCallback(ev);
     return ev;
   }
 
-  template <typename OUT>
-  bool sendTo(uint8_t type, OUT data)
+  template <typename INALT>
+  INALT readAlt()
+  {
+    RF24NetworkHeader header;
+    INALT ev;
+    uint8_t len = sizeof(INALT);
+    uint8_t buff[len];
+    _network->read(header, buff, len);
+    memcpy(&ev, &buff, len);
+    return ev;
+  }
+
+  // template <typename OUT>
+  bool sendTo(uint8_t type, OUT data, bool print = true)
   {
     uint8_t len = sizeof(OUT);
     uint8_t bs[len];
@@ -44,13 +61,45 @@ public:
     RF24NetworkHeader header(_to, type);
     _connected = _network->write(header, bs, len);
 
-    if (_connectedStateChanged() && _connectionStateChangeCallback != NULL)
+    if (_sentPacketCallback != nullptr && print)
+      _sentPacketCallback(data);
+
+    if (_connectedStateChanged() && _connectionStateChangeCallback != nullptr)
       _connectionStateChangeCallback();
 
-    if (_sentEventCallback != NULL)
+    if (_sentEventCallback != nullptr)
       _sentEventCallback(_connected);
 
     return _connected;
+  }
+
+  template <typename OUTALT>
+  bool sendAltTo(uint8_t type, OUTALT data)
+  {
+    uint8_t len = sizeof(OUTALT);
+    uint8_t bs[len];
+    memcpy(bs, &data, len);
+    // takes 3ms if OK, 30ms if not OK
+    RF24NetworkHeader header(_to, type);
+    _connected = _network->write(header, bs, len);
+
+    if (_connectedStateChanged() && _connectionStateChangeCallback != nullptr)
+      _connectionStateChangeCallback();
+
+    if (_sentEventCallback != nullptr)
+      _sentEventCallback(_connected);
+
+    return _connected;
+  }
+
+  void setSentPacketCallback(ClientSentPacketCallback cb)
+  {
+    _sentPacketCallback = cb;
+  }
+
+  void setReadPacketCallback(ClientReadPacketCallback cb)
+  {
+    _readPacketCallback = cb;
   }
 
   void setConnectedStateChangeCallback(ClientEventCallback cb)
@@ -74,7 +123,7 @@ public:
       {
         _connected = true;
         _packetAvailableCallback(header.from_node, header.type);
-        if (_connectedStateChanged() && _connectionStateChangeCallback != NULL)
+        if (_connectedStateChanged() && _connectionStateChangeCallback != nullptr)
           _connectionStateChangeCallback();
       }
     }
@@ -88,9 +137,12 @@ public:
 private:
   RF24Network *_network;
   uint8_t _to;
-  PacketAvailableCallback _packetAvailableCallback;
-  ClientEventCallback _connectionStateChangeCallback;
-  ClientEventWithBoolCallback _sentEventCallback;
+  PacketAvailableCallback _packetAvailableCallback = nullptr;
+  ClientEventCallback _connectionStateChangeCallback = nullptr;
+  ClientEventWithBoolCallback _sentEventCallback = nullptr;
+  ClientSentPacketCallback _sentPacketCallback = nullptr;
+  ClientReadPacketCallback _readPacketCallback = nullptr;
+
   bool _connected = true, _oldConnected = false;
 
   bool _connectedStateChanged()
