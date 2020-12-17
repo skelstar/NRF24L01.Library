@@ -20,13 +20,17 @@ public:
 
   void begin(
       RF24Network *network,
-      PacketAvailableCallback packetAvailableCallback)
+      PacketAvailableCallback packetAvailableCallback,
+      bool printTx,
+      bool printRx)
   {
     _network = network;
     _packetAvailableCallback = packetAvailableCallback;
+    _printTx = printTx;
+    _printRx = printRx;
   }
 
-  IN read(bool print = true)
+  IN read()
   {
     RF24NetworkHeader header;
     IN ev;
@@ -34,7 +38,7 @@ public:
     uint8_t buff[len];
     _network->read(header, buff, len);
     memcpy(&ev, &buff, len);
-    if (_readPacketCallback != nullptr && print)
+    if (_readPacketCallback != nullptr && _printRx)
       _readPacketCallback(ev);
     return ev;
   }
@@ -52,7 +56,7 @@ public:
   }
 
   // template <typename OUT>
-  bool sendTo(uint8_t type, OUT data, bool print = true)
+  bool sendTo(uint8_t type, OUT data)
   {
     uint8_t len = sizeof(OUT);
     uint8_t bs[len];
@@ -61,7 +65,7 @@ public:
     RF24NetworkHeader header(_to, type);
     _connected = _network->write(header, bs, len);
 
-    if (_sentPacketCallback != nullptr && print)
+    if (_sentPacketCallback != nullptr && _printTx)
       _sentPacketCallback(data);
 
     if (_connectedStateChanged() && _connectionStateChangeCallback != nullptr)
@@ -142,6 +146,7 @@ private:
   ClientEventWithBoolCallback _sentEventCallback = nullptr;
   ClientSentPacketCallback _sentPacketCallback = nullptr;
   ClientReadPacketCallback _readPacketCallback = nullptr;
+  bool _printTx = false, _printRx = false;
 
   bool _connected = true, _oldConnected = false;
 
