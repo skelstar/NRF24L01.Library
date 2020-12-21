@@ -48,7 +48,8 @@ void NRF24L01Lib::update()
 	{
 		RF24NetworkHeader header;
 		_network->peek(header);
-		_packetAvailableCallback(header.from_node, header.type);
+		if (_packetAvailableCallback != nullptr)
+			_packetAvailableCallback(header.from_node, header.type);
 	}
 }
 //---------------------------------------------------------------------------------
