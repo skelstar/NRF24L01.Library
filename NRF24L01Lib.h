@@ -21,7 +21,7 @@ public:
 			RF24 *radio,
 			RF24Network *network,
 			uint16_t address,
-			PacketAvailableCallback packetAvailableCallback,
+			PacketAvailableCallback packetAvailableCallback = nullptr,
 			bool multicastEnable = false);
 	void update();
 	void read_into(uint8_t *data, uint8_t data_len);
@@ -33,7 +33,7 @@ private:
 	RF24Network *_network;
 	bool _multicastEnabled = false;
 
-	PacketAvailableCallback _packetAvailableCallback;
+	PacketAvailableCallback _packetAvailableCallback = nullptr;
 };
 
 #endif
