@@ -1,6 +1,10 @@
 #include "Arduino.h"
 #include "NRF24L01Lib.h"
 
+#ifndef PRINT_NRF24L01_DETAILS
+#define PRINT_NRF24L01_DETAILS 0
+#endif
+
 //--------------------------------------------------------------------------------
 
 NRF24L01Lib::NRF24L01Lib() {}
@@ -38,7 +42,8 @@ void NRF24L01Lib::begin(
 	_radio->flush_rx();
 	_radio->flush_tx();
 
-	_radio->printDetails(); // Dump the configuration of the rf unit for debugging
+	if (PRINT_NRF24L01_DETAILS)
+		_radio->printDetails(); // Dump the configuration of the rf unit for debugging
 }
 //---------------------------------------------------------------------------------
 void NRF24L01Lib::update()
