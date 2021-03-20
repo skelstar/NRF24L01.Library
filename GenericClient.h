@@ -112,20 +112,33 @@ public:
     _sentEventCallback = cb;
   }
 
-  void update()
+  void update(SemaphoreHandle_t semaphore = nullptr)
   {
-    _network->update();
-    if (_network->available())
+    bool taken = semaphore == nullptr || xSemaphoreTake(semaphore, (TickType_t)10);
+
+    if (taken)
     {
-      RF24NetworkHeader header;
-      _network->peek(header);
-      if (header.from_node == _to)
+      _network->update();
+
+      if (_network->available())
       {
-        _connected = true;
-        _packetAvailableCallback(header.from_node, header.type);
-        if (_connectedStateChanged() && _connectionStateChangeCallback != nullptr)
-          _connectionStateChangeCallback();
+        RF24NetworkHeader header;
+        _network->peek(header);
+
+        if (semaphore != nullptr)
+          // give semaphore so _packetAvailableCallback can use it
+          xSemaphoreGive(semaphore);
+
+        if (header.from_node == _to)
+        {
+          _connected = true;
+          _packetAvailableCallback(header.from_node, header.type);
+          if (_connectedStateChanged() && _connectionStateChangeCallback != nullptr)
+            _connectionStateChangeCallback();
+        }
       }
+      if (xSemaphoreGetMutexHolder(semaphore) != NULL)
+        xSemaphoreGive(semaphore);
     }
   }
 
