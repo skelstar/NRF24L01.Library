@@ -1,5 +1,3 @@
-//test
-
 typedef void (*PacketAvailableCallback)(uint16_t from, uint8_t type);
 typedef void (*ClientEventCallback)(void);
 typedef void (*ClientEventWithBoolCallback)(bool success);
