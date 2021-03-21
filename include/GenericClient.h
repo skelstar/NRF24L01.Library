@@ -2,8 +2,6 @@ typedef void (*PacketAvailableCallback)(uint16_t from, uint8_t type);
 typedef void (*ClientEventCallback)(void);
 typedef void (*ClientEventWithBoolCallback)(bool success);
 
-bool radioInitialised = false;
-
 template <typename OUT, typename IN>
 class GenericClient
 {
@@ -37,7 +35,8 @@ public:
     if (taken)
     {
       _network->read(header, buff, len);
-      xSemaphoreGive(_mutex);
+      if (_mutex != nullptr)
+        xSemaphoreGive(_mutex);
       memcpy(&ev, &buff, len);
     }
     else
@@ -60,7 +59,8 @@ public:
     if (taken)
     {
       _network->read(header, buff, len);
-      xSemaphoreGive(_mutex);
+      if (_mutex != nullptr)
+        xSemaphoreGive(_mutex);
       memcpy(&ev, &buff, len);
     }
     else
@@ -81,7 +81,8 @@ public:
     if (taken)
     {
       _connected = _network->write(header, bs, len);
-      xSemaphoreGive(_mutex);
+      if (_mutex != nullptr)
+        xSemaphoreGive(_mutex);
     }
 
     if (_sentPacketCallback != nullptr)
@@ -106,11 +107,15 @@ public:
     RF24NetworkHeader header(_to, type);
 
     bool taken = _mutex == nullptr || xSemaphoreTake(_mutex, (TickType_t)10);
+
     if (taken)
     {
       _connected = _network->write(header, bs, len);
-      xSemaphoreGive(_mutex);
+      if (_mutex != nullptr)
+        xSemaphoreGive(_mutex);
     }
+    else
+      return false;
 
     if (_connectedStateChanged() && _connectionStateChangeCallback != nullptr)
       _connectionStateChangeCallback();
@@ -166,7 +171,7 @@ public:
             _connectionStateChangeCallback();
         }
       }
-      if (xSemaphoreGetMutexHolder(_mutex) != NULL)
+      if (_mutex != nullptr && xSemaphoreGetMutexHolder(_mutex) != NULL)
         xSemaphoreGive(_mutex);
     }
     return taken;
