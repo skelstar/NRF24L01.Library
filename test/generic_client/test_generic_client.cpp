@@ -16,6 +16,10 @@ RF24Network network(radio);
 
 GenericClient<VescData, ControllerData> testClient(00);
 
+SemaphoreHandle_t mutex;
+
+VescData data;
+
 void packetAvailable_cb(uint16_t from_id, uint8_t t)
 {
   Serial.printf("Packet available from %d\n", from_id);
@@ -24,9 +28,12 @@ void packetAvailable_cb(uint16_t from_id, uint8_t t)
 // runs every test
 void setUp()
 {
-  nrf24.begin(&radio, &network, 00);
+#define PRINT_NRF24L01_DETAILS 0
+  nrf24.begin(&radio, &network, 1);
 
-  testClient.begin(&network, packetAvailable_cb);
+  mutex = xSemaphoreCreateMutex();
+
+  testClient.begin(&network, packetAvailable_cb, mutex);
   // testClient.setConnectedStateChangeCallback([] {
   //   if (PRINT_BOARD_CLIENT_CONNECTED_CHANGED)
   //     Serial.printf(BOARD_CLIENT_CONNECTED_FORMAT, testClient.connected() ? "CONNECTED" : "DISCONNECTED");
@@ -40,11 +47,38 @@ void tearDown()
 {
 }
 
-void test_not_failing()
+void test_send_able_to_take_free_mutex()
 {
-  float temp = 330.0;
+  bool success = testClient.sendTo(1, data);
 
-  TEST_ASSERT_EQUAL(330.0, temp);
+  TEST_ASSERT_TRUE(success);
+}
+
+void test_send_unable_to_take_busy_mutex()
+{
+  xSemaphoreTake(mutex, (TickType_t)50);
+
+  bool success = testClient.sendTo(1, data);
+
+  TEST_ASSERT_FALSE(success);
+}
+
+void test_update_able_to_take_free_mutex()
+{
+  bool success = testClient.update();
+
+  TEST_ASSERT_TRUE(success);
+}
+
+void test_update_unable_to_take_busy_mutex()
+{
+  xSemaphoreTake(mutex, (TickType_t)50);
+
+  bool success = testClient.update();
+
+  xSemaphoreGive(mutex);
+
+  TEST_ASSERT_FALSE(success);
 }
 
 void setup()
@@ -52,7 +86,10 @@ void setup()
   delay(2000);
   UNITY_BEGIN();
 
-  RUN_TEST(test_not_failing);
+  RUN_TEST(test_send_able_to_take_free_mutex);
+  RUN_TEST(test_send_unable_to_take_busy_mutex);
+  RUN_TEST(test_update_able_to_take_free_mutex);
+  RUN_TEST(test_update_unable_to_take_busy_mutex);
 
   UNITY_END();
 }

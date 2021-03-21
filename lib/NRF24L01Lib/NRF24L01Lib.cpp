@@ -42,8 +42,9 @@ void NRF24L01Lib::begin(
 	_radio->flush_rx();
 	_radio->flush_tx();
 
-	if (PRINT_NRF24L01_DETAILS)
-		_radio->printDetails(); // Dump the configuration of the rf unit for debugging
+#if PRINT_NRF24L01_DETAILS == 1
+	_radio->printDetails(); // Dump the configuration of the rf unit for debugging
+#endif
 }
 //---------------------------------------------------------------------------------
 void NRF24L01Lib::update()
