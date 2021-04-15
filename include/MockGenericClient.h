@@ -27,6 +27,7 @@ public:
     _network = network;
     _packetAvailableCallback = packetAvailableCallback;
     _mutex = mutex;
+    _sent_id = 0;
   }
 
   IN read()
@@ -68,6 +69,7 @@ public:
     _mock_sent_packet_type = type;
     _mock_sent_data = data;
     _since_sent = 0;
+    _sent_id++;
 
     return true;
   }
@@ -137,6 +139,9 @@ public:
     _mock_client_is_available_cb = available_cb;
   }
 
+  // - check for a new (or unresponded to) packet
+  // - if delay==0 then send response
+  // - otherwise if there is a delay and delay is over, send the response
   bool update()
   {
     if (_mock_client_is_available_cb != nullptr &&
@@ -147,8 +152,14 @@ public:
     }
 
     // mock the delay before board would respond
-    if (_receiver_response_delay = 0 || _since_sent > _receiver_response_delay)
-      _packetAvailableCallback(0, Packet::CONTROL);
+    if (_receiver_response_delay = 0 || (_since_sent > _receiver_response_delay))
+    {
+      if (_last_replied_to_id != _sent_id)
+      {
+        _packetAvailableCallback(/*from*/ COMMS_BOARD, /*type*/ Packet::CONTROL);
+      }
+      _last_replied_to_id = _sent_id;
+    }
 
     return true;
   }
@@ -167,7 +178,9 @@ private:
   ClientEventWithBoolCallback _sentEventCallback = nullptr;
   ClientSentPacketCallback _sentPacketCallback = nullptr;
   ClientReadPacketCallback _readPacketCallback = nullptr;
-  unsigned long _receiver_response_delay = 0;
+  unsigned long _receiver_response_delay = 0,
+                _last_replied_to_id = 100,
+                _sent_id = 0;
   elapsedMillis _since_sent;
 
   uint8_t _mock_sent_packet_type;
