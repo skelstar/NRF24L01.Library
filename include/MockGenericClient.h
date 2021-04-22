@@ -2,6 +2,18 @@ typedef void (*PacketAvailableCallback)(uint16_t from, uint8_t type);
 typedef void (*ClientEventCallback)(void);
 typedef void (*ClientEventWithBoolCallback)(bool success);
 
+#include <RF24.h>
+#include <RF24Network.h>
+#include <NRF24L01Lib.h>
+
+#ifndef RADIO_OBJECTS
+#define RADIO_OBJECTS
+NRF24L01Lib nrf24;
+
+RF24 radio(NRF_CE, NRF_CS);
+RF24Network network(radio);
+#endif
+
 template <typename OUT, typename IN>
 class GenericClient
 {
@@ -9,6 +21,9 @@ class GenericClient
   typedef void (*ClientReadPacketCallback)(IN in);
   typedef IN (*MockResponseCallback)(OUT out);
   typedef bool (*MockClientIsAvailableCallback)(OUT out);
+
+public:
+  bool printWarnings = true;
 
 public:
   GenericClient(uint8_t to)
@@ -34,7 +49,8 @@ public:
   {
     if (_mock_response_cb == nullptr)
     {
-      Serial.printf("ERROR: _mock_response_cb not set!\n");
+      if (printWarnings == true)
+        Serial.printf("ERROR: _mock_response_cb not set1!\n");
       IN dummy;
       return dummy;
     }
@@ -58,8 +74,6 @@ public:
         xSemaphoreGive(_mutex);
       memcpy(&ev, &buff, len);
     }
-    else
-      Serial.printf("ERROR: Generic client unable to take mutex (readAlt)\n");
     return ev;
   }
 
@@ -148,6 +162,7 @@ public:
         !_mock_client_is_available_cb(_mock_sent_data))
     {
       // mocked target device is not available
+      DEBUG("WARNING: _mock_client_is_available_cb has not been set!");
       return false;
     }
 
@@ -162,6 +177,13 @@ public:
     }
 
     return true;
+  }
+
+  bool ready()
+  {
+    return //_mock_client_is_available_cb != nullptr &&
+        _mock_response_cb != nullptr &&
+        true;
   }
 
   bool connected()
