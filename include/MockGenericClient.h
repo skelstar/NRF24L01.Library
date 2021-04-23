@@ -1,18 +1,11 @@
-typedef void (*PacketAvailableCallback)(uint16_t from, uint8_t type);
-typedef void (*ClientEventCallback)(void);
-typedef void (*ClientEventWithBoolCallback)(bool success);
+#define MOCK_GENERIC_CLIENT
 
 #include <RF24.h>
 #include <RF24Network.h>
-#include <NRF24L01Lib.h>
 
-#ifndef RADIO_OBJECTS
-#define RADIO_OBJECTS
-NRF24L01Lib nrf24;
-
-RF24 radio(NRF_CE, NRF_CS);
-RF24Network network(radio);
-#endif
+typedef void (*PacketAvailableCallback)(uint16_t from, uint8_t type);
+typedef void (*ClientEventCallback)(void);
+typedef void (*ClientEventWithBoolCallback)(bool success);
 
 template <typename OUT, typename IN>
 class GenericClient
@@ -20,14 +13,11 @@ class GenericClient
   typedef void (*ClientSentPacketCallback)(OUT out);
   typedef void (*ClientReadPacketCallback)(IN in);
   typedef IN (*MockResponseCallback)(OUT out);
-  typedef bool (*MockClientIsAvailableCallback)(OUT out);
-
-public:
-  bool printWarnings = true;
 
 public:
   GenericClient(uint8_t to)
   {
+    Serial.printf("[MOCK] GenericClient\n");
     _to = to;
     _mocked_from = (_to == COMMS_CONTROLLER)
                        ? COMMS_BOARD
@@ -42,20 +32,13 @@ public:
     _network = network;
     _packetAvailableCallback = packetAvailableCallback;
     _mutex = mutex;
-    _sent_id = 0;
   }
 
   IN read()
   {
     if (_mock_response_cb == nullptr)
-    {
-      if (printWarnings == true)
-        Serial.printf("ERROR: _mock_response_cb not set1!\n");
-      IN dummy;
-      return dummy;
-    }
-    IN response = _mock_response_cb(_mock_sent_data);
-    return response;
+      Serial.printf("ERROR: _mock_response_cb not set!\n");
+    return _mock_response_cb(_mock_sent_data);
   }
 
   template <typename INALT>
@@ -74,16 +57,16 @@ public:
         xSemaphoreGive(_mutex);
       memcpy(&ev, &buff, len);
     }
+    else
+      Serial.printf("ERROR: Generic client unable to take mutex (readAlt)\n");
     return ev;
   }
 
-  // template <typename OUT>
   bool sendTo(uint8_t type, OUT data)
   {
     _mock_sent_packet_type = type;
     _mock_sent_data = data;
     _since_sent = 0;
-    _sent_id++;
 
     return true;
   }
@@ -138,9 +121,9 @@ public:
   }
 
   // Mock methods
-  void mockResponseDelay(unsigned long response_delay)
+  void mockResponseTime(unsigned long response_time)
   {
-    _receiver_response_delay = response_delay;
+    _receiver_response_time = response_time;
   }
 
   void mockResponseCallback(MockResponseCallback response_cb)
@@ -148,42 +131,12 @@ public:
     _mock_response_cb = response_cb;
   }
 
-  void mockClientAvailableCallback(MockClientIsAvailableCallback available_cb)
-  {
-    _mock_client_is_available_cb = available_cb;
-  }
-
-  // - check for a new (or unresponded to) packet
-  // - if delay==0 then send response
-  // - otherwise if there is a delay and delay is over, send the response
   bool update()
   {
-    if (_mock_client_is_available_cb != nullptr &&
-        !_mock_client_is_available_cb(_mock_sent_data))
-    {
-      // mocked target device is not available
-      DEBUG("WARNING: _mock_client_is_available_cb has not been set!");
-      return false;
-    }
-
-    // mock the delay before board would respond
-    if (_receiver_response_delay = 0 || (_since_sent > _receiver_response_delay))
-    {
-      if (_last_replied_to_id != _sent_id)
-      {
-        _packetAvailableCallback(/*from*/ COMMS_BOARD, /*type*/ Packet::CONTROL);
-      }
-      _last_replied_to_id = _sent_id;
-    }
+    if (_receiver_response_time = 0 || _since_sent > _receiver_response_time)
+      _packetAvailableCallback(0, Packet::CONTROL);
 
     return true;
-  }
-
-  bool ready()
-  {
-    return //_mock_client_is_available_cb != nullptr &&
-        _mock_response_cb != nullptr &&
-        true;
   }
 
   bool connected()
@@ -200,15 +153,12 @@ private:
   ClientEventWithBoolCallback _sentEventCallback = nullptr;
   ClientSentPacketCallback _sentPacketCallback = nullptr;
   ClientReadPacketCallback _readPacketCallback = nullptr;
-  unsigned long _receiver_response_delay = 0,
-                _last_replied_to_id = 100,
-                _sent_id = 0;
+  unsigned long _receiver_response_time = 0;
   elapsedMillis _since_sent;
 
   uint8_t _mock_sent_packet_type;
   OUT _mock_sent_data;
   MockResponseCallback _mock_response_cb = nullptr;
-  MockClientIsAvailableCallback _mock_client_is_available_cb = nullptr;
 
   bool _connected = true, _oldConnected = false;
 
