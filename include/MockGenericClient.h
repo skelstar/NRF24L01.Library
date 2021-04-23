@@ -38,7 +38,7 @@ public:
   void begin(
       RF24Network *network,
       PacketAvailableCallback packetAvailableCallback,
-      xSemaphoreHandle mutex = nullptr)
+      SemaphoreHandle_t mutex = nullptr)
   {
     _network = network;
     _packetAvailableCallback = packetAvailableCallback;
