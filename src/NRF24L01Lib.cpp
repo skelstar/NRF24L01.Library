@@ -15,7 +15,9 @@ void NRF24L01Lib::begin(
 		RF24Network *network,
 		uint16_t address,
 		PacketAvailableCallback packetAvailableCallback,
-		bool multicastEnable)
+		bool multicastEnable,
+		// TODO update library
+		bool printDetails)
 {
 	_radio = radio;
 	_network = network;
@@ -42,9 +44,8 @@ void NRF24L01Lib::begin(
 	_radio->flush_rx();
 	_radio->flush_tx();
 
-#if PRINT_NRF24L01_DETAILS == 1
-	_radio->printDetails(); // Dump the configuration of the rf unit for debugging
-#endif
+	if (printDetails)
+		_radio->printDetails(); // Dump the configuration of the rf unit for debugging
 }
 //---------------------------------------------------------------------------------
 void NRF24L01Lib::update()
