@@ -22,7 +22,8 @@ public:
 			RF24Network *network,
 			uint16_t address,
 			PacketAvailableCallback packetAvailableCallback = nullptr,
-			bool multicastEnable = false);
+			bool multicastEnable = false,
+			bool printDetails = false);
 	void update();
 	void read_into(uint8_t *data, uint8_t data_len);
 	bool send(uint16_t to, uint8_t type, uint8_t *data, uint8_t data_len);

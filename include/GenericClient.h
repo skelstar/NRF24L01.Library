@@ -1,10 +1,6 @@
-
-
 typedef void (*PacketAvailableCallback)(uint16_t from, uint8_t type);
 typedef void (*ClientEventCallback)(void);
 typedef void (*ClientEventWithBoolCallback)(bool success);
-
-bool radioInitialised = false;
 
 template <typename OUT, typename IN>
 class GenericClient
@@ -20,10 +16,12 @@ public:
 
   void begin(
       RF24Network *network,
-      PacketAvailableCallback packetAvailableCallback)
+      PacketAvailableCallback packetAvailableCallback,
+      xSemaphoreHandle mutex = nullptr)
   {
     _network = network;
     _packetAvailableCallback = packetAvailableCallback;
+    _mutex = mutex;
   }
 
   IN read()
@@ -32,8 +30,18 @@ public:
     IN ev;
     uint8_t len = sizeof(IN);
     uint8_t buff[len];
-    _network->read(header, buff, len);
-    memcpy(&ev, &buff, len);
+
+    bool taken = _mutex == nullptr || xSemaphoreTake(_mutex, (TickType_t)10);
+    if (taken)
+    {
+      _network->read(header, buff, len);
+      if (_mutex != nullptr)
+        xSemaphoreGive(_mutex);
+      memcpy(&ev, &buff, len);
+    }
+    else
+      Serial.printf("ERROR: Generic client unable to take mutex (read)\n");
+
     if (_readPacketCallback != nullptr)
       _readPacketCallback(ev);
     return ev;
@@ -46,8 +54,17 @@ public:
     INALT ev;
     uint8_t len = sizeof(INALT);
     uint8_t buff[len];
-    _network->read(header, buff, len);
-    memcpy(&ev, &buff, len);
+
+    bool taken = _mutex == nullptr || xSemaphoreTake(_mutex, (TickType_t)10);
+    if (taken)
+    {
+      _network->read(header, buff, len);
+      if (_mutex != nullptr)
+        xSemaphoreGive(_mutex);
+      memcpy(&ev, &buff, len);
+    }
+    else
+      Serial.printf("ERROR: Generic client unable to take mutex (readAlt)\n");
     return ev;
   }
 
@@ -59,7 +76,14 @@ public:
     memcpy(bs, &data, len);
     // takes 3ms if OK, 30ms if not OK
     RF24NetworkHeader header(_to, type);
-    _connected = _network->write(header, bs, len);
+
+    bool taken = _mutex == nullptr || xSemaphoreTake(_mutex, (TickType_t)10);
+    if (taken)
+    {
+      _connected = _network->write(header, bs, len);
+      if (_mutex != nullptr)
+        xSemaphoreGive(_mutex);
+    }
 
     if (_sentPacketCallback != nullptr)
       _sentPacketCallback(data);
@@ -70,7 +94,7 @@ public:
     if (_sentEventCallback != nullptr)
       _sentEventCallback(_connected);
 
-    return _connected;
+    return _connected && taken;
   }
 
   template <typename OUTALT>
@@ -81,7 +105,17 @@ public:
     memcpy(bs, &data, len);
     // takes 3ms if OK, 30ms if not OK
     RF24NetworkHeader header(_to, type);
-    _connected = _network->write(header, bs, len);
+
+    bool taken = _mutex == nullptr || xSemaphoreTake(_mutex, (TickType_t)10);
+
+    if (taken)
+    {
+      _connected = _network->write(header, bs, len);
+      if (_mutex != nullptr)
+        xSemaphoreGive(_mutex);
+    }
+    else
+      return false;
 
     if (_connectedStateChanged() && _connectionStateChangeCallback != nullptr)
       _connectionStateChangeCallback();
@@ -89,7 +123,7 @@ public:
     if (_sentEventCallback != nullptr)
       _sentEventCallback(_connected);
 
-    return _connected;
+    return _connected && taken;
   }
 
   void setSentPacketCallback(ClientSentPacketCallback cb)
@@ -112,21 +146,35 @@ public:
     _sentEventCallback = cb;
   }
 
-  void update()
+  bool update()
   {
-    _network->update();
-    if (_network->available())
+    bool taken = _mutex == nullptr || xSemaphoreTake(_mutex, (TickType_t)10);
+
+    if (taken)
     {
-      RF24NetworkHeader header;
-      _network->peek(header);
-      if (header.from_node == _to)
+      _network->update();
+
+      if (_network->available())
       {
-        _connected = true;
-        _packetAvailableCallback(header.from_node, header.type);
-        if (_connectedStateChanged() && _connectionStateChangeCallback != nullptr)
-          _connectionStateChangeCallback();
+        RF24NetworkHeader header;
+        _network->peek(header);
+
+        if (_mutex != nullptr)
+          // give semaphore so _packetAvailableCallback can use it
+          xSemaphoreGive(_mutex);
+
+        if (header.from_node == _to)
+        {
+          _connected = true;
+          _packetAvailableCallback(header.from_node, header.type);
+          if (_connectedStateChanged() && _connectionStateChangeCallback != nullptr)
+            _connectionStateChangeCallback();
+        }
       }
+      if (_mutex != nullptr && xSemaphoreGetMutexHolder(_mutex) != NULL)
+        xSemaphoreGive(_mutex);
     }
+    return taken;
   }
 
   bool connected()
@@ -137,6 +185,7 @@ public:
 private:
   RF24Network *_network;
   uint8_t _to;
+  SemaphoreHandle_t _mutex;
   PacketAvailableCallback _packetAvailableCallback = nullptr;
   ClientEventCallback _connectionStateChangeCallback = nullptr;
   ClientEventWithBoolCallback _sentEventCallback = nullptr;
